@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import storage.model.FileUploadRequest;
@@ -46,5 +47,19 @@ public class FileController {
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=" + fileName)
                 .body(inputStreamResource);
+    }
+
+    @DeleteMapping(Constants.DELETE_FILE)
+    public ResponseEntity<String> deleteFile(@PathVariable String fileName) {
+        try {
+            boolean isDeleted = fileService.deleteFile(fileName);
+            if (isDeleted) {
+                return ResponseEntity.ok("File deleted successfully.");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting file: " + e.getMessage());
+        }
     }
 }

@@ -3,10 +3,11 @@ package storage.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import storage.model.enums.Visibility;
+import storage.util.Constants;
 
 import java.util.List;
 
-@Document(collection = "files")
+@Document(collection = Constants.COLLECTION_NAME)
 public class FileMetadata {
 
     @Id

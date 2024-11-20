@@ -3,7 +3,6 @@ package storage.service;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import storage.model.FileMetadata;
 import storage.model.FileUploadRequest;
+import storage.util.Constants;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,5 +58,17 @@ public class FileService {
             return new InputStreamResource(fileStream);
         }
         return null;
+    }
+
+    public boolean deleteFile(String fileName) {
+        try {
+            gridFsTemplate.delete(new Query(Criteria.where("filename").is(fileName)));
+            mongoTemplate.remove(new Query(Criteria.where("filename").is(fileName)), Constants.COLLECTION_NAME);
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
