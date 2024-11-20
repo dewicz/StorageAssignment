@@ -8,6 +8,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import storage.model.FileDownloadResponse;
 import storage.model.FileUploadRequest;
 import storage.service.FileService;
 import storage.util.Constants;
@@ -43,10 +44,11 @@ public class FileController {
 
     @GetMapping(Constants.DOWNLOAD_FILE)
     public ResponseEntity<InputStreamResource> downloadFile(@PathVariable String fileName) {
-        InputStreamResource inputStreamResource = fileService.downloadFile(fileName);
+        FileDownloadResponse fileDownloadResponse = fileService.downloadFile(fileName);
         return ResponseEntity.ok()
+                .header("Content-Type", fileDownloadResponse.getContentType())
                 .header("Content-Disposition", "attachment; filename=" + fileName)
-                .body(inputStreamResource);
+                .body(fileDownloadResponse.getInputStreamResource());
     }
 
     @DeleteMapping(Constants.DELETE_FILE)
@@ -60,6 +62,18 @@ public class FileController {
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting file: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<String> updateFileName(@RequestParam String oldFileName,
+                                                 @RequestParam String newFileName) {
+        boolean isUpdated = fileService.updateFileNameByFilename(oldFileName, newFileName);
+
+        if (isUpdated) {
+            return ResponseEntity.ok("File name updated successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found or update failed.");
         }
     }
 }
