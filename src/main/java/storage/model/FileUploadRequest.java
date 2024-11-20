@@ -1,8 +1,9 @@
-package storage.model.enums;
+package storage.model;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
+import storage.model.enums.Visibility;
 
 import java.util.List;
 
@@ -18,6 +19,9 @@ public class FileUploadRequest {
 
     @Size(max = 5)
     private List<String> tags;
+
+    @NotNull
+    private String user;
 
     public @NotNull MultipartFile getFile() {
         return file;
@@ -49,5 +53,13 @@ public class FileUploadRequest {
 
     public void setTags(@Size(max = 5) List<String> tags) {
         this.tags = tags;
+    }
+
+    public @NotNull String getUser() {
+        return user;
+    }
+
+    public void setUser(@NotNull String user) {
+        this.user = user;
     }
 }
