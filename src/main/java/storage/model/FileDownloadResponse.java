@@ -13,6 +13,9 @@ public class FileDownloadResponse {
         this.contentType = contentType;
     }
 
+    public FileDownloadResponse() {
+    }
+
     public InputStreamResource getInputStreamResource() {
         return inputStreamResource;
     }

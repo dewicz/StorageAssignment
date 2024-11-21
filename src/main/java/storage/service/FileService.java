@@ -22,7 +22,9 @@ import storage.util.Helper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +38,8 @@ public class FileService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    private Set<String> aggregatedTags;
 
     public FileUploadResponse store(FileUploadRequest request) throws IOException {
         MultipartFile file = request.getFile();
@@ -125,7 +129,7 @@ public class FileService {
         }
     }
 
-    public List<FileListResponse> listPublicFiles(int page, int size) {
+    public List<FileListResponse> listPublicFiles(Integer page, Integer size) {
         Query query = new Query(Criteria.where("visibility").is(Visibility.PUBLIC));
         query.skip((page-1) * size).limit(size);
 
@@ -139,7 +143,7 @@ public class FileService {
         return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
     }
 
-    public List<FileListResponse> listUserFiles(String user, int page, int size) {
+    public List<FileListResponse> listUserFiles(String user, Integer page, Integer size) {
         Query query = new Query(Criteria.where("user").is(user));
         query.skip((page-1) * size).limit(size);
 
@@ -153,17 +157,25 @@ public class FileService {
         return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
     }
 
-    public List<FileListResponse> listFiles(int page, int size, Sort sort) {
+    public List<FileListResponse> listFiles(Integer page, Integer size, Sort sort, List<String> tags) {
         Query query = new Query();
         query.skip((page-1) * size).limit(size).with(sort)
                 .collation(Collation.of("en").strength(Collation.ComparisonLevel.secondary()));
-
+        if(!tags.isEmpty()) {
+            query.addCriteria(Criteria.where("tags").in(tags));
+        }
         return constructListResponse(mongoTemplate.find(query, FileMetadata.class, Constants.COLLECTION_NAME));
     }
 
-    public long countFiles() {
-        return mongoTemplate.count(new Query(), FileMetadata.class);
+    public long countFiles(List<String> tags) {
+        Query query = new Query();
+        if(!tags.isEmpty()) {
+            query.addCriteria(Criteria.where("tags").in(tags))
+                    .collation(Collation.of("en").strength(Collation.ComparisonLevel.secondary()));
+        }
+        return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
     }
+
     private List<FileListResponse> constructListResponse(List<FileMetadata> files) {
         return files.stream()
                 .map(file -> new FileListResponse(
@@ -175,5 +187,16 @@ public class FileService {
                         Helper.constructDownloadLink(file.getFilename())
                 ))
                 .collect(Collectors.toList());
+    }
+
+    public Set<String> getAggregatedTags() {
+        if(aggregatedTags == null) {
+            aggregatedTags = new HashSet<>();
+            List<FileMetadata> files = mongoTemplate.find(new Query(), FileMetadata.class, Constants.COLLECTION_NAME);
+            files.forEach(file -> {
+                aggregatedTags.addAll(file.getTags());
+            });
+        }
+        return aggregatedTags;
     }
 }

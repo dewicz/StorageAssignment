@@ -21,6 +21,9 @@ public class FileListResponse {
         this.downloadLink = downloadLink;
     }
 
+    public FileListResponse() {
+    }
+
     public String getFilename() {
         return filename;
     }

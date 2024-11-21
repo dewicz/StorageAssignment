@@ -20,6 +20,8 @@ import storage.util.Helper;
 import java.io.IOException;
 import java.util.*;
 
+import static storage.util.Helper.constructResponse;
+
 
 @RestController
 @RequestMapping(Constants.FILES_API)
@@ -86,48 +88,41 @@ public class FileController {
     }
 
     @GetMapping("/public")
-    public ResponseEntity<Map<String, Object>> listPublicFiles(@RequestParam(defaultValue = "1") int page) {
-        Map<String, Object> response = new LinkedHashMap<>();
+    public ResponseEntity<Map<String, Object>> listPublicFiles(@RequestParam(defaultValue = "1") Integer page) {
         List<FileListResponse> publicFiles = fileService.listPublicFiles(page, size);
         long totalFiles = fileService.countPublicFiles();
-        response.put("files", publicFiles);
-        response.put("currentPage", page);
-        response.put("totalItems", totalFiles);
-        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        Map<String, Object> response = constructResponse(publicFiles, page, totalFiles, size);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/byUser/{user}")
-    public ResponseEntity<Map<String, Object>> listUserFiles(@PathVariable String user, @RequestParam(defaultValue = "1") int page) {
-        Map<String, Object> response = new LinkedHashMap<>();
-        List<FileListResponse> publicFiles = fileService.listUserFiles(user,page, size);
+    public ResponseEntity<Map<String, Object>> listUserFiles(@PathVariable String user, @RequestParam(defaultValue = "1") Integer page) {
+        List<FileListResponse> userFiles = fileService.listUserFiles(user, page, size);
         long totalFiles = fileService.countUserFiles(user);
-        response.put("files", publicFiles);
-        response.put("currentPage", page);
-        response.put("totalItems", totalFiles);
-        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        Map<String, Object> response = constructResponse(userFiles, page, totalFiles, size);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") int page, @RequestParam Optional<String> sortField) {
-        Map<String, Object> response = new LinkedHashMap<>();
-
+    public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") Integer page, @RequestParam Optional<String> sortField, @RequestParam Optional<List<String>> tags) {
         Sort sort = Sort.unsorted();
         if(sortField.isPresent()) {
             String sortFieldValue = sortField.get();
             if(sortFieldValue.equalsIgnoreCase("tags")) {
-                sortFieldValue = Helper.tagSortConverter(sortFieldValue);
+                sortFieldValue = Helper.tagSortConverter();
             }
             sort = Sort.by(Sort.Order.asc(sortFieldValue));
         }
 
-        List<FileListResponse> publicFiles = fileService.listFiles(page, size, sort);
-        long totalFiles = fileService.countFiles();
-        response.put("files", publicFiles);
-        response.put("currentPage", page);
-        response.put("totalItems", totalFiles);
-        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        List<String> tagsList = Collections.EMPTY_LIST;
+        if(tags.isPresent()) {
+            tagsList = tags.get();
+        }
+
+        List<FileListResponse> files = fileService.listFiles(page, size, sort, tagsList);
+        long totalFiles = fileService.countFiles(tagsList);
+        Map<String, Object> response = constructResponse(files, page, totalFiles, size);
+        response.put("availableTags", fileService.getAggregatedTags());
         return ResponseEntity.ok(response);
     }
 }

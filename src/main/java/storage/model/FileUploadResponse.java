@@ -9,6 +9,9 @@ public class FileUploadResponse {
         this.error = error;
     }
 
+    public FileUploadResponse() {
+    }
+
     public String getFilename() {
         return filename;
     }
