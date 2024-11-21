@@ -9,11 +9,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import storage.model.FileDownloadResponse;
+import storage.model.FileListResponse;
 import storage.model.FileUploadRequest;
 import storage.service.FileService;
 import storage.util.Constants;
+import storage.util.Helper;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -24,8 +30,8 @@ public class FileController {
     @Autowired
     FileService fileService;
 
-    @Value("${server.port}")
-    private String port;
+    @Value("${page.size}")
+    private int size;
 
     @PostMapping(Constants.UPLOAD)
     public ResponseEntity<String> uploadFile(@Valid @ModelAttribute FileUploadRequest fileUploadRequest) {
@@ -34,7 +40,7 @@ public class FileController {
 
             String message = String.format("File '%s' uploaded successfully with visibility '%s' and tags %s, follow this link to download it %s",
                     fileUploadRequest.getFilename(), fileUploadRequest.getVisibility(), fileUploadRequest.getTags(),
-                    Constants.LOCALHOST + port + Constants.FILES_API + Constants.DOWNLOAD + fileUploadRequest.getFilename());
+                    Helper.constructDownloadLink(fileUploadRequest.getFilename()));
 
             return ResponseEntity.ok(message);
         } catch (IOException e) {
@@ -75,5 +81,41 @@ public class FileController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found or update failed.");
         }
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<Map<String, Object>> listPublicFiles(@RequestParam(defaultValue = "1") int page) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        List<FileListResponse> publicFiles = fileService.listPublicFiles(page, size);
+        long totalFiles = fileService.countPublicFiles();
+        response.put("files", publicFiles);
+        response.put("currentPage", page);
+        response.put("totalItems", totalFiles);
+        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/byUser/{user}")
+    public ResponseEntity<Map<String, Object>> listUserFiles(@PathVariable String user, @RequestParam(defaultValue = "1") int page) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        List<FileListResponse> publicFiles = fileService.listUserFiles(user,page, size);
+        long totalFiles = fileService.countUserFiles(user);
+        response.put("files", publicFiles);
+        response.put("currentPage", page);
+        response.put("totalItems", totalFiles);
+        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") int page) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        List<FileListResponse> publicFiles = fileService.listFiles(page, size);
+        long totalFiles = fileService.countFiles();
+        response.put("files", publicFiles);
+        response.put("currentPage", page);
+        response.put("totalItems", totalFiles);
+        response.put("totalPages", (int) Math.ceil((double) totalFiles / size));
+        return ResponseEntity.ok(response);
     }
 }

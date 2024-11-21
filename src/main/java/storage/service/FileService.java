@@ -4,8 +4,10 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -13,12 +15,17 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import storage.model.FileDownloadResponse;
+import storage.model.FileListResponse;
 import storage.model.FileMetadata;
 import storage.model.FileUploadRequest;
+import storage.model.enums.Visibility;
 import storage.util.Constants;
+import storage.util.Helper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FileService {
@@ -92,7 +99,9 @@ public class FileService {
                     .metadata(gridFSFile.getMetadata());
 
             // Re-upload the file with the new filename
-            String newFileId = gridFsTemplate.store(fileContent, newFileName, gridFSFile.getMetadata().getString("_contentType"), options.getMetadata()).toString();
+            String newFileId = gridFsTemplate.store(fileContent, newFileName, gridFSFile.getMetadata() != null
+                    ? gridFSFile.getMetadata().getString("_contentType")
+                    : "application/octet-stream", options.getMetadata()).toString();
             gridFsTemplate.delete(query);
 
             Update updateFilename = new Update().set("filename", newFileName);
@@ -104,5 +113,53 @@ public class FileService {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public List<FileListResponse> listPublicFiles(int page, int size) {
+        Query query = new Query(Criteria.where("visibility").is(Visibility.PUBLIC));
+        query.skip((page-1) * size).limit(size);
+
+        List<FileMetadata> files = mongoTemplate.find(query, FileMetadata.class, Constants.COLLECTION_NAME);
+
+        return files.stream()
+                .map(file -> new FileListResponse(
+                        file.getFilename(),
+                        file.getVisibility(),
+                        file.getTags(),
+                        file.getUser(),
+                        Helper.constructDownloadLink(file.getFilename())
+                ))
+                .collect(Collectors.toList());
+    }
+
+    public long countPublicFiles() {
+        Query query = new Query()
+                .addCriteria(Criteria.where("visibility").is(Visibility.PUBLIC));
+
+        return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
+    }
+
+    public List<FileListResponse> listUserFiles(String user, int page, int size) {
+        Query query = new Query(Criteria.where("user").is(user));
+        query.skip((page-1) * size).limit(size);
+
+        List<FileMetadata> files = mongoTemplate.find(query, FileMetadata.class, Constants.COLLECTION_NAME);
+
+        return files.stream()
+                .map(file -> new FileListResponse(
+                        file.getFilename(),
+                        file.getVisibility(),
+                        file.getTags(),
+                        file.getUser(),
+                        Helper.constructDownloadLink(file.getFilename())
+                ))
+                .collect(Collectors.toList());
+    }
+
+    public long countUserFiles(String user) {
+        Query query = new Query()
+                .addCriteria(Criteria.where("user").is(user));
+
+        return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
     }
 }
