@@ -10,5 +10,8 @@ public class Constants {
     public static final String DELETE_FILE = DELETE + "/{fileName}";
     public final static String LOCALHOST = "http://localhost:";
     public final static String COLLECTION_NAME = "files";
-
+    public final static String UPDATE = "/update";
+    public final static String PUBLIC = "/public";
+    public final static String BY_USER = "/byUser/{user}";
+    public final static String ALL = "/all";
 }

@@ -75,7 +75,7 @@ public class FileController {
         }
     }
 
-    @PutMapping("/update")
+    @PutMapping(Constants.UPDATE)
     public ResponseEntity<String> updateFileName(@RequestParam String oldFileName,
                                                  @RequestParam String newFileName) {
         boolean isUpdated = fileService.updateFileName(oldFileName, newFileName);
@@ -87,7 +87,7 @@ public class FileController {
         }
     }
 
-    @GetMapping("/public")
+    @GetMapping(Constants.PUBLIC)
     public ResponseEntity<Map<String, Object>> listPublicFiles(@RequestParam(defaultValue = "1") Integer page) {
         List<FileListResponse> publicFiles = fileService.listPublicFiles(page, size);
         long totalFiles = fileService.countPublicFiles();
@@ -95,7 +95,7 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/byUser/{user}")
+    @GetMapping(Constants.BY_USER)
     public ResponseEntity<Map<String, Object>> listUserFiles(@PathVariable String user, @RequestParam(defaultValue = "1") Integer page) {
         List<FileListResponse> userFiles = fileService.listUserFiles(user, page, size);
         long totalFiles = fileService.countUserFiles(user);
@@ -103,7 +103,7 @@ public class FileController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/all")
+    @GetMapping(Constants.ALL)
     public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") Integer page, @RequestParam Optional<String> sortField, @RequestParam Optional<List<String>> tags) {
         Sort sort = Sort.unsorted();
         if(sortField.isPresent()) {
