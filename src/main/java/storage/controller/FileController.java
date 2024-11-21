@@ -76,7 +76,7 @@ public class FileController {
     @PutMapping("/update")
     public ResponseEntity<String> updateFileName(@RequestParam String oldFileName,
                                                  @RequestParam String newFileName) {
-        boolean isUpdated = fileService.updateFileNameByFilename(oldFileName, newFileName);
+        boolean isUpdated = fileService.updateFileName(oldFileName, newFileName);
 
         if (isUpdated) {
             return ResponseEntity.ok("File name updated successfully.");
