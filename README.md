@@ -71,6 +71,15 @@ Below is a summary if endpoints available. I suggest testing with Postman and pr
    git clone https://github.com/dewicz/storageassignment.git
    cd storageassignment
 
+2. **MongoDB connection:**
+
+  My MongoDB credentials are set in the properties file. Feel free to use those or swap for your own. In case of any access issues do reach out.
+
+3. **Server port:**
+
+  Server port is set to 8081, feel free to modify as desired.
+
+
 
 ## Future improvements
 While the application meets most of the functional and non-functional requirements, some details were simplified in order to adhere to the time frame suggested for the exercise. Here are some areas for improvement and how I would address them:
@@ -81,6 +90,8 @@ Current implementation allows sorting by filename, user, size, tags, visibility.
 ### 3. Pagination
 Page size value is currently set in properties file and user can specify which page to access via request parameter. Depending on requirements, both page size could also be configurable via request parameter
 ### 4. Testing
-Application is tested by unit tests aiming at 80% coverage per class. To improve, testing of more corner cases should be added. Also, integration testing would be a good way to better evaluate database operations and overall application flow 
-### 5. Contenerization
-Using Docker to contenerize the app would increase application portability and overall deployment workflow. I had issues installing Docker on my machine so decided to skip this part in the interest of timely submission.
+Application is tested by unit tests, aiming to reach 80% coverage on most classes. To improve, testing of more corner cases should be added. Also, integration testing would be a good way to better evaluate database operations and overall application flow 
+### 5. Architecture
+I kept the overall architecture fairly simple to ease of evaluation. As new requirements arise, it would be beneficial to introduce more modularity, for example split the file service into two based on operations (one for reads, one for writes).
+### 6. Containerization
+Using Docker to containerize the app would increase application portability and overall deployment workflow. I had issues installing Docker on my machine so decided to skip this part in the interest of timely submission.

@@ -2,8 +2,6 @@ package storage.model;
 
 import org.springframework.core.io.InputStreamResource;
 
-import java.net.http.HttpHeaders;
-
 public class FileDownloadResponse {
     InputStreamResource inputStreamResource;
     String contentType;
