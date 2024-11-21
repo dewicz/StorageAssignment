@@ -20,4 +20,8 @@ public class Helper {
     public static String constructDownloadLink(String filename) {
         return Constants.LOCALHOST + staticServerPort + Constants.FILES_API + Constants.DOWNLOAD + "/" + filename;
     }
+
+    public static String tagSortConverter(String tag) {
+        return "tags.0";
+    }
 }

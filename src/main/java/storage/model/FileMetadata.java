@@ -17,6 +17,7 @@ public class FileMetadata {
     private Visibility visibility;
     private List<String> tags;
     private String user;
+    private long size;
 
     public String getId() {
         return id;
@@ -64,5 +65,13 @@ public class FileMetadata {
 
     public void setUser(String user) {
         this.user = user;
+    }
+
+    public long getSize() {
+        return size;
+    }
+
+    public void setSize(long size) {
+        this.size = size;
     }
 }

@@ -5,21 +5,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import storage.model.FileDownloadResponse;
 import storage.model.FileListResponse;
 import storage.model.FileUploadRequest;
+import storage.model.FileUploadResponse;
 import storage.service.FileService;
 import storage.util.Constants;
 import storage.util.Helper;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @RestController
@@ -36,13 +35,16 @@ public class FileController {
     @PostMapping(Constants.UPLOAD)
     public ResponseEntity<String> uploadFile(@Valid @ModelAttribute FileUploadRequest fileUploadRequest) {
         try {
-            fileService.store(fileUploadRequest);
+            FileUploadResponse response = fileService.store(fileUploadRequest);
 
-            String message = String.format("File '%s' uploaded successfully with visibility '%s' and tags %s, follow this link to download it %s",
-                    fileUploadRequest.getFilename(), fileUploadRequest.getVisibility(), fileUploadRequest.getTags(),
-                    Helper.constructDownloadLink(fileUploadRequest.getFilename()));
+            if(response.getFilename() != null) {
+                String message = String.format("File '%s' uploaded successfully with visibility '%s' and tags %s, follow this link to download it %s",
+                        fileUploadRequest.getFilename(), fileUploadRequest.getVisibility(), fileUploadRequest.getTags(),
+                        Helper.constructDownloadLink(fileUploadRequest.getFilename()));
 
-            return ResponseEntity.ok(message);
+                return ResponseEntity.ok(message);
+            }
+            return ResponseEntity.status(500).body("Failed to upload file: " + response.getError());
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Failed to upload file: " + e.getMessage());
         }
@@ -108,9 +110,19 @@ public class FileController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") int page) {
+    public ResponseEntity<Map<String, Object>> listFiles(@RequestParam(defaultValue = "1") int page, @RequestParam Optional<String> sortField) {
         Map<String, Object> response = new LinkedHashMap<>();
-        List<FileListResponse> publicFiles = fileService.listFiles(page, size);
+
+        Sort sort = Sort.unsorted();
+        if(sortField.isPresent()) {
+            String sortFieldValue = sortField.get();
+            if(sortFieldValue.equalsIgnoreCase("tags")) {
+                sortFieldValue = Helper.tagSortConverter(sortFieldValue);
+            }
+            sort = Sort.by(Sort.Order.asc(sortFieldValue));
+        }
+
+        List<FileListResponse> publicFiles = fileService.listFiles(page, size, sort);
         long totalFiles = fileService.countFiles();
         response.put("files", publicFiles);
         response.put("currentPage", page);

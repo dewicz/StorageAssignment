@@ -9,13 +9,15 @@ public class FileListResponse {
     private Visibility visibility;
     private List<String> tags;
     private String user;
+    private long size;
     private String downloadLink;
 
-    public FileListResponse(String filename, Visibility visibility, List<String> tags, String user, String downloadLink) {
+    public FileListResponse(String filename, Visibility visibility, List<String> tags, String user, long size, String downloadLink) {
         this.filename = filename;
         this.visibility = visibility;
         this.tags = tags;
         this.user = user;
+        this.size = size;
         this.downloadLink = downloadLink;
     }
 
@@ -57,5 +59,13 @@ public class FileListResponse {
 
     public void setDownloadLink(String downloadLink) {
         this.downloadLink = downloadLink;
+    }
+
+    public long getSize() {
+        return size;
+    }
+
+    public void setSize(long size) {
+        this.size = size;
     }
 }

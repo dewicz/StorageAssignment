@@ -3,21 +3,22 @@ package storage.service;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import storage.model.FileDownloadResponse;
-import storage.model.FileListResponse;
-import storage.model.FileMetadata;
-import storage.model.FileUploadRequest;
+import storage.model.*;
 import storage.model.enums.Visibility;
 import storage.util.Constants;
 import storage.util.Helper;
@@ -25,6 +26,7 @@ import storage.util.Helper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,24 +41,35 @@ public class FileService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public String store(FileUploadRequest request) throws IOException {
+    public FileUploadResponse store(FileUploadRequest request) throws IOException {
         MultipartFile file = request.getFile();
-        try {
-            String fileId = gridFsTemplate.store(file.getInputStream(), request.getFilename(), file.getContentType()).toString();
+        GridFSFile existingFile = gridFsTemplate.findOne(new Query(Criteria.where("filename").is(request.getFilename())));
 
+        if (existingFile != null) {
+            return new FileUploadResponse(null, "File with the same name already exists");
+        }
+        try {
+            ObjectId fileId = gridFsTemplate.store(file.getInputStream(), request.getFilename(), file.getContentType());
+
+            // Retrieve GridFSFile using the ObjectId
+            GridFSFile gridFSFile = gridFsTemplate.findOne(new Query(Criteria.where("_id").is(fileId)));
+
+            // Get file size from GridFSFile
+            long size = gridFSFile.getLength();
             FileMetadata metadata = new FileMetadata();
-            metadata.setFileId(fileId);
+            metadata.setFileId(fileId.toString());
             metadata.setFilename(request.getFilename());
             metadata.setVisibility(request.getVisibility());
             metadata.setTags(request.getTags());
             metadata.setUser(request.getUser());
+            metadata.setSize(size);
 
             mongoTemplate.save(metadata);
 
-            return fileId.toString();
+            return new FileUploadResponse(fileId.toString(), null);
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            return new FileUploadResponse(null, "Error presisting file");
         }
     }
 
@@ -127,6 +140,7 @@ public class FileService {
                         file.getVisibility(),
                         file.getTags(),
                         file.getUser(),
+                        file.getSize(),
                         Helper.constructDownloadLink(file.getFilename())
                 ))
                 .collect(Collectors.toList());
@@ -151,6 +165,7 @@ public class FileService {
                         file.getVisibility(),
                         file.getTags(),
                         file.getUser(),
+                        file.getSize(),
                         Helper.constructDownloadLink(file.getFilename())
                 ))
                 .collect(Collectors.toList());
@@ -161,5 +176,29 @@ public class FileService {
                 .addCriteria(Criteria.where("user").is(user));
 
         return mongoTemplate.count(query, FileMetadata.class, Constants.COLLECTION_NAME);
+    }
+
+    public List<FileListResponse> listFiles(int page, int size, Sort sort) {
+        Query query = new Query();
+        query.skip((page-1) * size).limit(size).with(sort)
+                .collation(Collation.of("en").strength(Collation.ComparisonLevel.secondary()));
+
+        return constructListResponse(mongoTemplate.find(query, FileMetadata.class, Constants.COLLECTION_NAME));
+    }
+
+    public long countFiles() {
+        return mongoTemplate.count(new Query(), FileMetadata.class);
+    }
+    private List<FileListResponse> constructListResponse(List<FileMetadata> files) {
+        return files.stream()
+                .map(file -> new FileListResponse(
+                        file.getFilename(),
+                        file.getVisibility(),
+                        file.getTags(),
+                        file.getUser(),
+                        file.getSize(),
+                        Helper.constructDownloadLink(file.getFilename())
+                ))
+                .collect(Collectors.toList());
     }
 }
